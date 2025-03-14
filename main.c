@@ -118,7 +118,6 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  /* Warunki wykonywane ciągle, w pętli */
 
 	  measure_voltage();
 	  compute_fft();
@@ -332,9 +331,9 @@ static void MX_GPIO_Init(void)
 /* Pomiar danych z czujnika */
 void measure_voltage(void){
 	for (uint16_t i = 0; i< num_samples; i++){
-		 HAL_ADC_Start(&hadc1);                     // Rozpocznij konwersję
-		 HAL_ADC_PollForConversion(&hadc1, 1);      // Czekaj na zakończenie konwersji
-		 adc_buffer[i] = HAL_ADC_GetValue(&hadc1);  // Zapisz wynik do bufora
+		 HAL_ADC_Start(&hadc1);                    
+		 HAL_ADC_PollForConversion(&hadc1, 1);      
+		 adc_buffer[i] = HAL_ADC_GetValue(&hadc1);  
 		 fir_filter_process((float32_t*)adc_buffer, (float32_t*)filtered_adc_buffer, BLOCK_SIZE);
 	}
 
@@ -346,17 +345,14 @@ void compute_fft(void){
 	arm_rfft_fast_instance_f32 fft_instance;
 	arm_rfft_fast_init_f32(&fft_instance, num_samples);
 
-	// Konwersja danych z ADC na float32
 	for (uint16_t i = 0; i < num_samples; i++)
 	{
 	  input_fft[i] = (float32_t)(filtered_adc_buffer[i]);
 	  input_fft[i] *= 0.5 * (1 - cosf(2 * M_PI * i / (num_samples - 1)));
 	}
 
-	// Wykonanie FFT
 	arm_rfft_fast_f32(&fft_instance, input_fft, output_fft, 0);
 
-	// Obliczenie modułu widma (amplitudy)
 	for (uint16_t i = 0; i < num_samples / 2; i++)
 	{
 	  float real = output_fft[2 * i];
@@ -365,7 +361,7 @@ void compute_fft(void){
 	}
 }
 
-// Przesyłanie danych do matlaba przez USART
+/* Przesyłanie danych do matlaba przez USART */
 void send_data_to_matlab(void)
 {
   char buffer[40];
@@ -373,11 +369,11 @@ void send_data_to_matlab(void)
 
   for (uint16_t i = 0; i < num_samples / 2; i++)
   {
-    frequency = (float)i * fs / num_samples;  // Obliczenie częstotliwości
+    frequency = (float)i * fs / num_samples;  // Obliczenie częstotliwości próbki
 
     // Formatowanie danych: częstotliwość, amplituda
     sprintf(buffer, "%f, %f\n", frequency, output_fft_mag[i]);
-    HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 1);
+    HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 1); // Przesyłanie liczb ośmiobitowych
   }
 }
 
